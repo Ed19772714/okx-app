@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Botmonitor</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Botmonitor">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141413" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-512.png">
+<style>
+:root{
+  --bg:#f7f6f3; --card:#ffffff; --ink:#141413; --ink2:#5e5d59; --ink3:#8a8984; --line:#e8e6df;
+  --accent:#2a78d6; --market:#9b9a94; --good:#1f8a4c; --bad:#c2412d; --warn:#b7791f;
+  --goodbg:#e6f4ec; --badbg:#fbe9e6; --warnbg:#fbf1dd; --chip:#f0efe9;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#141413; --card:#1f1f1d; --ink:#f0efec; --ink2:#c3c2b7; --ink3:#8f8e87; --line:#33332f;
+    --accent:#4a93ec; --market:#77766f; --good:#4cc07e; --bad:#ec7a63; --warn:#e0a849;
+    --goodbg:#16301f; --badbg:#3a1d17; --warnbg:#382a12; --chip:#2a2a27; }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 16px) 16px calc(env(safe-area-inset-bottom) + 32px)}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+header h1{font-size:15px;font-weight:600;margin:0;color:var(--ink2);letter-spacing:.01em}
+.iconbtn{border:0;background:var(--chip);color:var(--ink);width:36px;height:36px;border-radius:18px;font-size:16px;display:grid;place-items:center;cursor:pointer}
+.iconbtn:active{opacity:.6}
+.hero{margin:6px 0 18px}
+.hero .val{font-size:44px;font-weight:700;letter-spacing:-.02em;line-height:1.05;font-variant-numeric:tabular-nums}
+.hero .val small{font-size:18px;font-weight:600;color:var(--ink2);margin-left:4px}
+.delta{display:inline-flex;gap:6px;align-items:center;margin-top:8px;padding:4px 10px;border-radius:999px;font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
+.delta.up{background:var(--goodbg);color:var(--good)} .delta.down{background:var(--badbg);color:var(--bad)}
+.meta{color:var(--ink3);font-size:13px;margin-top:8px}
+.total{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.total .k{font-size:13px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em}
+.total .big{font-size:30px;font-weight:700;letter-spacing:-.01em;margin-top:4px;font-variant-numeric:tabular-nums}
+.total .big span{font-size:18px;font-weight:600;margin-left:6px}
+.flow{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-top:12px;font-variant-numeric:tabular-nums}
+.flow div{background:var(--bg);border-radius:10px;padding:8px 10px}
+.flow small{display:block;font-size:11px;color:var(--ink3)}
+.flow b{font-size:16px}
+.flow .arrow{background:none;color:var(--ink3);padding:0}
+.cmp{font-size:13px;color:var(--ink2);margin-top:10px}
+.card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:14px;border:1px solid var(--line)}
+.card h2{font-size:13px;font-weight:600;color:var(--ink2);margin:0 0 12px;text-transform:uppercase;letter-spacing:.04em}
+.seg{display:flex;background:var(--chip);border-radius:10px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:transparent;color:var(--ink2);font:inherit;font-size:13px;font-weight:600;padding:7px 0;border-radius:8px;cursor:pointer}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.legend{display:flex;gap:16px;font-size:13px;color:var(--ink2);margin-bottom:6px}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+.chartwrap{position:relative;touch-action:pan-y}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.tip{position:absolute;top:0;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:6px 8px;border-radius:8px;white-space:nowrap;transform:translateX(-50%);display:none;font-variant-numeric:tabular-nums}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:var(--bg);border-radius:12px;padding:12px}
+.tile .k{font-size:12px;color:var(--ink2)}
+.tile .v{font-size:20px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .s{font-size:12px;color:var(--ink3);margin-top:2px}
+.pos{color:var(--good)} .neg{color:var(--bad)}
+.status{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:12px;margin-bottom:12px}
+.status.ok{background:var(--goodbg)} .status.warn{background:var(--warnbg)} .status.err{background:var(--badbg)}
+.status b{display:block}
+.status .dot{width:10px;height:10px;border-radius:5px;margin-top:6px;flex:none}
+.status.ok .dot{background:var(--good)} .status.warn .dot{background:var(--warn)} .status.err .dot{background:var(--bad)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:14px}
+dt{color:var(--ink2)} dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.bot+.bot{border-top:1px solid var(--line);margin-top:12px;padding-top:12px}
+.bot h3{font-size:16px;margin:0 0 8px}
+.report{font-size:14.5px}
+.report h1,.report h2,.report h3{font-size:16px;margin:16px 0 6px;text-transform:none;letter-spacing:0;color:var(--ink)}
+.report table{border-collapse:collapse;width:100%;font-size:13px;display:block;overflow-x:auto}
+.report td,.report th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left}
+.report p{margin:6px 0}
+.report ul,.report ol{padding-left:20px;margin:6px 0}
+.muted{color:var(--ink3);font-size:13px}
+form label{display:block;font-size:13px;color:var(--ink2);margin:12px 0 4px}
+form input{width:100%;font:inherit;font-size:16px;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.btn{display:block;width:100%;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:600;padding:13px;border-radius:12px;margin-top:16px;cursor:pointer}
+.btn.ghost{background:var(--chip);color:var(--ink)}
+.hidden{display:none!important}
+.err{color:var(--bad)}
+.skeleton{height:220px;border-radius:12px;background:var(--chip)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>OKX botmonitor</h1>
+    <div style="display:flex;gap:8px">
+      <button class="iconbtn" id="refresh" aria-label="Vernieuwen">&#8635;</button>
+      <button class="iconbtn" id="settingsBtn" aria-label="Instellingen">&#9881;</button>
+    </div>
+  </header>
+
+  <section id="setup" class="card hidden">
+    <h2>Koppelen</h2>
+    <p class="muted">Eenmalig invullen. De gegevens blijven alleen op deze telefoon.</p>
+    <form id="setupForm">
+      <label for="owner">GitHub-gebruikersnaam</label>
+      <input id="owner" autocomplete="off" autocapitalize="off" required>
+      <label for="repo">Naam van de data-repository</label>
+      <input id="repo" value="okx-bot-monitor" autocomplete="off" autocapitalize="off" required>
+      <label for="token">Leestoken (begint met github_pat_)</label>
+      <input id="token" type="password" autocomplete="off" required>
+      <button class="btn" type="submit">Opslaan en laden</button>
+      <button class="btn ghost hidden" type="button" id="cancelSetup">Annuleren</button>
+    </form>
+  </section>
+
+  <div id="app" class="hidden">
+    <div class="hero">
+      <div class="val" id="value">–</div>
+      <div id="delta"></div>
+      <div class="meta" id="updated"></div>
+    </div>
+
+    <section class="total" id="totalBox"></section>
+
+    <div id="statusBox"></div>
+
+    <section class="card">
+      <div class="seg" id="range">
+        <button data-h="24" class="on">24 uur</button>
+        <button data-h="168">7 dagen</button>
+        <button data-h="720">30 dagen</button>
+        <button data-h="0">Alles</button>
+      </div>
+      <div class="legend"><span><i style="background:var(--accent)"></i>Portfolio</span><span><i style="background:var(--market)"></i>Markt (50% BTC + 50% ETH)</span></div>
+      <div class="chartwrap" id="chartwrap"><div class="skeleton"></div><div class="tip" id="tip"></div></div>
+    </section>
+
+    <section class="card">
+      <h2 id="tilesTitle">Afgelopen 24 uur</h2>
+      <div class="tiles" id="tiles"></div>
+    </section>
+
+    <section class="card" id="botsCard">
+      <h2>Bot</h2>
+      <div id="bots"></div>
+    </section>
+
+    <section class="card" id="reportCard">
+      <h2>Ochtendrapport</h2>
+      <div class="report" id="report"><p class="muted">Nog geen rapport beschikbaar.</p></div>
+    </section>
+
+    <p class="muted" id="foot"></p>
+  </div>
+  <p class="err" id="error"></p>
+</main>
+
+<script>
+const LS = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } };
+const $ = id => document.getElementById(id);
+const eur = (v, d = 2) => v == null || isNaN(v) ? '–' : '€ ' + v.toLocaleString('nl-NL', { minimumFractionDigits: d, maximumFractionDigits: d });
+const pct = (v, d = 2) => v == null || isNaN(v) ? '–' : (v > 0 ? '+' : '') + v.toLocaleString('nl-NL', { minimumFractionDigits: d, maximumFractionDigits: d }) + '%';
+const num = (v, d = 2) => v == null || isNaN(v) ? '–' : Number(v).toLocaleString('nl-NL', { maximumFractionDigits: d });
+const cls = v => v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+let rows = [], latest = null, rangeH = 24, config = {}, seedEnd = null;
+
+function cfg() { return { owner: LS('owner'), repo: LS('repo') || 'okx-bot-monitor', token: LS('token') }; }
+
+async function gh(path, asText = true) {
+  const c = cfg();
+  const r = await fetch(`https://api.github.com/repos/${c.owner}/${c.repo}/contents/${path}?t=${Date.now()}`, {
+    headers: { Authorization: 'Bearer ' + c.token, Accept: 'application/vnd.github.raw+json' }, cache: 'no-store'
+  });
+  if (r.status === 404) return null;
+  if (r.status === 401 || r.status === 403) throw new Error('Geen toegang: controleer gebruikersnaam, repository-naam en token.');
+  if (!r.ok) throw new Error('GitHub gaf foutcode ' + r.status);
+  return asText ? r.text() : r.json();
+}
+
+function parseCSV(t) {
+  const lines = t.trim().split(/\r?\n/), head = lines.shift().split(',');
+  return lines.map(l => { const v = l.split(','); const o = {}; head.forEach((h, i) => o[h] = v[i]); return o; })
+    .filter(o => o.status === 'ok' && o.total_eur && o.btc_eur && o.eth_eur)
+    .map(o => ({ t: new Date(o.ts_utc), p: +o.total_eur, b: +o.btc_eur, e: +o.eth_eur }));
+}
+
+function windowRows(h) {
+  if (!rows.length) return [];
+  if (!h) return rows;
+  const end = rows[rows.length - 1].t.getTime(), start = end - h * 3600e3;
+  return rows.filter(r => r.t.getTime() >= start);
+}
+
+function stats(w) {
+  if (w.length < 2) return null;
+  const a = w[0], z = w[w.length - 1];
+  const m = r => (r.b / a.b + r.e / a.e) / 2;
+  const s = { p: (z.p / a.p - 1) * 100, pe: z.p - a.p, b: (z.b / a.b - 1) * 100, e: (z.e / a.e - 1) * 100, m: (m(z) - 1) * 100 };
+  let peak = a.p, dd = 0; for (const r of w) { peak = Math.max(peak, r.p); dd = Math.min(dd, r.p / peak - 1); }
+  s.dd = dd * 100;
+  // gevoeligheid over blokken van 3 uur
+  const rs = []; let last = null;
+  for (const r of w) if (!last || r.t - last >= 3 * 3600e3 - 3e5) { rs.push(r); last = r.t; }
+  if (rs[rs.length - 1] !== z) rs.push(z);
+  const xs = [], ys = [];
+  for (let i = 1; i < rs.length; i++) { xs.push(Math.log(m(rs[i]) / m(rs[i - 1]))); ys.push(Math.log(rs[i].p / rs[i - 1].p)); }
+  if (xs.length >= 3) {
+    const mx = xs.reduce((q, v) => q + v, 0) / xs.length, my = ys.reduce((q, v) => q + v, 0) / ys.length;
+    let vx = 0, cv = 0; xs.forEach((x, i) => { vx += (x - mx) ** 2; cv += (x - mx) * (ys[i] - my); });
+    if (vx > 0) { s.beta = cv / vx; s.alpha = Math.log(z.p / a.p) * 100 - s.beta * Math.log(m(z)) * 100; }
+  }
+  // stilstand op dit moment
+  let flat = 0; for (let i = w.length - 1; i > 0; i--) { if (Math.abs(w[i].p / w[i - 1].p - 1) < 0.0005) flat += (w[i].t - w[i - 1].t) / 3600e3; else break; }
+  s.flat = flat;
+  return s;
+}
+
+function drawChart() {
+  const w = windowRows(rangeH), wrap = $('chartwrap'), tip = $('tip');
+  wrap.querySelectorAll('svg,.skeleton').forEach(n => n.remove());
+  if (w.length < 2) { wrap.insertAdjacentHTML('afterbegin', '<p class="muted">Nog te weinig metingen voor een grafiek. De eerste uren komen er elk half uur punten bij.</p>'); return; }
+  const a = w[0], W = 340, H = 200, L = 34, R = 6, T = 8, B = 22;
+  const P = w.map(r => r.p / a.p * 100), M = w.map(r => ((r.b / a.b + r.e / a.e) / 2) * 100);
+  let lo = Math.min(...P, ...M), hi = Math.max(...P, ...M); const pad = Math.max((hi - lo) * 0.12, 0.3); lo -= pad; hi += pad;
+  const t0 = a.t.getTime(), t1 = w[w.length - 1].t.getTime();
+  const x = t => L + (t - t0) / (t1 - t0) * (W - L - R), y = v => T + (hi - v) / (hi - lo) * (H - T - B);
+  const path = arr => arr.map((v, i) => (i ? 'L' : 'M') + x(w[i].t.getTime()).toFixed(1) + ' ' + y(v).toFixed(1)).join('');
+  const raw = (hi - lo) / 5, mag = 10 ** Math.floor(Math.log10(raw)), step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(v => v >= raw);
+  let grid = '';
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
+    grid += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="${Math.abs(v - 100) < 1e-9 ? 1.2 : .6}"/>`
+      + `<text x="${L - 6}" y="${y(v) + 3.5}" text-anchor="end" font-size="10" fill="var(--ink3)">${v.toLocaleString('nl-NL')}</text>`;
+  }
+  const fmtX = d => rangeH && rangeH <= 24 ? d.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+  const xl = [0, .5, 1].map(f => { const t = t0 + f * (t1 - t0); return `<text x="${x(t)}" y="${H - 5}" font-size="10" fill="var(--ink3)" text-anchor="${f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}">${fmtX(new Date(t))}</text>`; }).join('');
+  wrap.insertAdjacentHTML('afterbegin', `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Portfolio tegenover de markt, index start = 100">
+    ${grid}${xl}
+    <path d="${path(M)}" fill="none" stroke="var(--market)" stroke-width="1.6" stroke-linejoin="round"/>
+    <path d="${path(P)}" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linejoin="round"/>
+    <line id="cross" y1="${T}" y2="${H - B}" stroke="var(--ink3)" stroke-width=".8" stroke-dasharray="2 2" visibility="hidden"/>
+    <circle id="dotP" r="4" fill="var(--accent)" stroke="var(--card)" stroke-width="2" visibility="hidden"/>
+    <circle id="dotM" r="3.5" fill="var(--market)" stroke="var(--card)" stroke-width="2" visibility="hidden"/>
+  </svg>`);
+  const svg = wrap.querySelector('svg');
+  const move = ev => {
+    const rc = svg.getBoundingClientRect(), px = (ev.clientX - rc.left) / rc.width * W;
+    const tt = t0 + Math.max(0, Math.min(1, (px - L) / (W - L - R))) * (t1 - t0);
+    let i = 0, best = Infinity; w.forEach((r, j) => { const d = Math.abs(r.t - tt); if (d < best) { best = d; i = j; } });
+    const cx = x(w[i].t.getTime());
+    svg.querySelector('#cross').setAttribute('x1', cx); svg.querySelector('#cross').setAttribute('x2', cx);
+    svg.querySelector('#dotP').setAttribute('cx', cx); svg.querySelector('#dotP').setAttribute('cy', y(P[i]));
+    svg.querySelector('#dotM').setAttribute('cx', cx); svg.querySelector('#dotM').setAttribute('cy', y(M[i]));
+    ['cross', 'dotP', 'dotM'].forEach(id => svg.querySelector('#' + id).setAttribute('visibility', 'visible'));
+    tip.style.display = 'block';
+    tip.style.left = Math.max(60, Math.min(rc.width - 60, cx / W * rc.width)) + 'px';
+    tip.innerHTML = `${w[i].t.toLocaleString('nl-NL', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}<br>Portfolio ${eur(w[i].p)} (${pct(P[i] - 100)})<br>Markt ${pct(M[i] - 100)}`;
+  };
+  const leave = () => { tip.style.display = 'none'; ['cross', 'dotP', 'dotM'].forEach(id => svg.querySelector('#' + id).setAttribute('visibility', 'hidden')); };
+  svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move); svg.addEventListener('pointerleave', leave);
+}
+
+function render() {
+  if (!rows.length) {
+    $('value').textContent = '–';
+    $('updated').textContent = latest && latest.status === 'fout' ? '' : 'Nog geen metingen. Start de workflow in GitHub of wacht een half uur.';
+  } else {
+    const z = rows[rows.length - 1];
+    $('value').innerHTML = eur(z.p).replace('€ ', '<small>€</small> ');
+    const s24 = stats(windowRows(24));
+    $('delta').innerHTML = s24 ? `<span class="delta ${s24.pe >= 0 ? 'up' : 'down'}">${s24.pe >= 0 ? '▲' : '▼'} ${eur(Math.abs(s24.pe))} (${pct(s24.p)}) · 24 uur</span>` : '';
+    const mins = Math.round((Date.now() - z.t) / 60000);
+    $('updated').textContent = 'Laatste meting ' + z.t.toLocaleString('nl-NL', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + (mins >= 0 && mins < 120 ? ` (${mins} min geleden)` : '');
+  }
+  renderTotal(); renderStatus(); drawChart(); renderTiles(); renderBots();
+}
+
+function renderTotal() {
+  const box = $('totalBox');
+  if (!rows.length) { box.classList.add('hidden'); return; }
+  box.classList.remove('hidden');
+  const start = config.inleg_datum ? new Date(config.inleg_datum) : rows[0].t;
+  const inleg = config.inleg_eur || rows[0].p;
+  const z = rows[rows.length - 1];
+  let ref = rows[0]; for (const r of rows) { if (r.t <= start) ref = r; else break; }
+  const wins = z.p - inleg, p = (z.p / inleg - 1) * 100;
+  const b = (z.b / ref.b - 1) * 100, e = (z.e / ref.e - 1) * 100;
+  const days = Math.max(1, Math.round((z.t - start) / 864e5));
+  const d = start.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+  box.innerHTML = `<div class="k">Totaalrendement sinds ${d}</div>
+    <div class="big ${cls(wins)}">${wins >= 0 ? '+' : '−'}${eur(Math.abs(wins))}<span>${pct(p)}</span></div>
+    <div class="flow"><div><small>Inleg ${d}</small><b>${eur(inleg)}</b></div><div class="arrow">→</div><div><small>Nu</small><b>${eur(z.p)}</b></div></div>
+    <div class="cmp">In dezelfde ${days} dagen: Bitcoin <span class="${cls(b)}">${pct(b, 1)}</span> · Ethereum <span class="${cls(e)}">${pct(e, 1)}</span></div>`;
+}
+
+function renderStatus() {
+  const box = $('statusBox'); let html = '';
+  const s = stats(windowRows(24));
+  const z = rows[rows.length - 1];
+  if (latest && latest.status === 'fout') html = `<div class="status err"><span class="dot"></span><div><b>Ophalen bij OKX mislukt</b>${(latest.errors || []).join('<br>')}</div></div>`;
+  else if (z && latest && (Date.now() - z.t) > 3 * 3600e3) html = `<div class="status warn"><span class="dot"></span><div><b>Geen nieuwe metingen</b>De laatste meting is ouder dan 3 uur. Controleer in GitHub of de workflow nog draait.</div></div>`;
+  else if (s && s.flat >= 3) html = `<div class="status warn"><span class="dot"></span><div><b>Bot lijkt stil te staan</b>Het portfolio beweegt al ${num(s.flat, 1)} uur niet. Kijk in OKX of een stop-loss is geraakt of de koers buiten de grid ligt.</div></div>`;
+  else if (latest && latest.bots && latest.bots.length) html = `<div class="status ok"><span class="dot"></span><div><b>Bot actief</b>${latest.bots.length === 1 ? 'Eén bot draait' : latest.bots.length + ' bots draaien'} en het portfolio beweegt mee met de handel.</div></div>`;
+  else if (latest && latest.status === 'ok') html = `<div class="status warn"><span class="dot"></span><div><b>Geen bot gevonden</b>De API ziet geen lopende bot. Mogelijk is het een type dat nog niet wordt uitgelezen.</div></div>`;
+  box.innerHTML = html;
+}
+
+function renderTiles() {
+  const s = stats(windowRows(rangeH));
+  const label = { 24: 'Afgelopen 24 uur', 168: 'Afgelopen 7 dagen', 720: 'Afgelopen 30 dagen', 0: 'Sinds de start van de meting' }[rangeH];
+  $('tilesTitle').textContent = label;
+  if (!s) { $('tiles').innerHTML = '<p class="muted">Nog te weinig metingen.</p>'; return; }
+  const z = rows[rows.length - 1];
+  const tile = (k, v, c, sub = '') => `<div class="tile"><div class="k">${k}</div><div class="v ${c}">${v}</div>${sub ? `<div class="s">${sub}</div>` : ''}</div>`;
+  $('tiles').innerHTML =
+    tile('Portfolio', pct(s.p), cls(s.p), eur(s.pe)) +
+    tile('Markt 50/50', pct(s.m), cls(s.m), 'BTC ' + pct(s.b, 1) + ' · ETH ' + pct(s.e, 1)) +
+    tile('Gevoeligheid', s.beta == null ? '–' : num(s.beta, 2), '', s.beta == null ? 'meer data nodig' : s.beta < -0.5 ? 'staat short' : s.beta > 0.5 ? 'staat long' : 'vrij neutraal') +
+    tile('Na marktcorrectie', s.alpha == null ? '–' : pct(s.alpha), cls(s.alpha), 'eigen resultaat bot') +
+    tile('Bitcoin', eur(z.b, 0), '', pct(s.b)) +
+    tile('Grootste daling', pct(s.dd), s.dd < 0 ? 'neg' : '', 'vanaf een top');
+}
+
+function renderBots() {
+  const el = $('bots');
+  const bots = (latest && latest.bots) || [];
+  let html = bots.map(b => {
+    const rows = [
+      ['Paar', b.instId], ['Richting', { long: 'Long', short: 'Short', neutral: 'Neutraal' }[b.direction] || b.direction],
+      ['Hefboom', b.lever ? num(b.lever, 1) + '×' : null],
+      ['Bandbreedte', b.min_px && b.max_px ? num(b.min_px, 0) + ' – ' + num(b.max_px, 0) : null],
+      ['Aantal grids', b.grid_num ? num(b.grid_num, 0) : null],
+      ['Investering', b.investment != null ? num(b.investment, 2) : null],
+      ['Totale winst', b.total_pnl != null ? `<span class="${cls(b.total_pnl)}">${num(b.total_pnl, 2)}</span>` : null],
+      ['Gridwinst', b.grid_profit != null ? num(b.grid_profit, 2) : null],
+      ['Ongerealiseerd', b.float_profit != null ? `<span class="${cls(b.float_profit)}">${num(b.float_profit, 2)}</span>` : null],
+      ['Rendement', b.pnl_ratio != null ? pct(b.pnl_ratio * 100) : null],
+      ['Stop-loss', b.sl_px ? num(b.sl_px, 0) : 'niet ingesteld'], ['Take-profit', b.tp_px ? num(b.tp_px, 0) : 'niet ingesteld'],
+      ['Gestart', b.created ? new Date(+b.created).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' }) : null],
+    ].filter(r => r[1] != null && r[1] !== '');
+    return `<div class="bot"><h3>${b.type_name || 'Bot'}</h3><dl>${rows.map(r => `<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('')}</dl></div>`;
+  }).join('');
+  const pos = (latest && latest.positions) || [];
+  if (pos.length) html += `<div class="bot"><h3>Open posities</h3><dl>${pos.map(p => `<dt>${p.instId}</dt><dd>${p.side === 'short' ? 'Short' : 'Long'} · $${num(p.notional_usd, 0)}${p.lever ? ' · ' + num(p.lever, 1) + '×' : ''}</dd>`).join('')}</dl></div>`;
+  el.innerHTML = html || '<p class="muted">Nog geen botgegevens.</p>';
+}
+
+function md(src) {
+  const esc = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\*(.+?)\*/g, '<i>$1</i>');
+  const out = []; const lines = src.replace(/\r/g, '').split('\n'); let i = 0;
+  while (i < lines.length) {
+    const l = lines[i];
+    if (!l.trim()) { i++; continue; }
+    let m;
+    if ((m = l.match(/^(#{1,4})\s+(.*)/))) { out.push(`<h3>${inline(m[2])}</h3>`); i++; continue; }
+    if (/^\s*\|/.test(l)) {
+      const tb = []; while (i < lines.length && /^\s*\|/.test(lines[i])) tb.push(lines[i++]);
+      const cells = r => r.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+      const body = tb.filter(r => !/^\s*\|[\s:|-]+\|\s*$/.test(r));
+      out.push('<table>' + body.map((r, k) => '<tr>' + cells(r).map(c => k ? `<td>${inline(c)}</td>` : `<th>${inline(c)}</th>`).join('') + '</tr>').join('') + '</table>');
+      continue;
+    }
+    if (/^\s*([-*]|\d+\.)\s+/.test(l)) {
+      const ol = /^\s*\d+\./.test(l), it = [];
+      while (i < lines.length && /^\s*([-*]|\d+\.)\s+/.test(lines[i])) it.push(lines[i++].replace(/^\s*([-*]|\d+\.)\s+/, ''));
+      out.push(`<${ol ? 'ol' : 'ul'}>` + it.map(x => `<li>${inline(x)}</li>`).join('') + `</${ol ? 'ol' : 'ul'}>`);
+      continue;
+    }
+    const p = []; while (i < lines.length && lines[i].trim() && !/^(#|\s*\||\s*[-*]\s|\s*\d+\.\s)/.test(lines[i])) p.push(lines[i++]);
+    out.push(`<p>${inline(p.join(' '))}</p>`);
+  }
+  return out.join('');
+}
+
+async function load() {
+  $('error').textContent = '';
+  const c = cfg();
+  if (!c.owner || !c.token) { showSetup(false); return; }
+  $('setup').classList.add('hidden'); $('app').classList.remove('hidden');
+  $('refresh').style.opacity = .4;
+  try {
+    const [csv, seed, conf, lat, rep] = await Promise.all([gh('data/history.csv'), gh('data/history_screenshots.csv').catch(() => null),
+      gh('data/config.json').catch(() => null), gh('data/latest.json'), gh('reports/latest.md').catch(() => null)]);
+    const live = csv ? parseCSV(csv) : [], old = seed ? parseCSV(seed) : [];
+    const firstLive = live.length ? live[0].t : Infinity;
+    rows = old.filter(r => r.t < firstLive).concat(live).sort((a, b) => a.t - b.t);
+    seedEnd = old.length && live.length ? old[old.length - 1].t : (old.length ? old[old.length - 1].t : null);
+    config = conf ? JSON.parse(conf) : {};
+    latest = lat ? JSON.parse(lat) : null;
+    if (rep) $('report').innerHTML = md(rep);
+    render();
+    const sd = seedEnd ? ` Tot ${seedEnd.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })} afgeleid uit screenshots (bij benadering), daarna gemeten via OKX.` : '';
+    $('foot').textContent = rows.length ? `${rows.length} meetpunten sinds ${rows[0].t.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })}.${sd} Ververst automatisch elk half uur.` : '';
+  } catch (e) { $('error').textContent = e.message; }
+  $('refresh').style.opacity = 1;
+}
+
+function showSetup(cancelable) {
+  const c = cfg();
+  $('owner').value = c.owner || ''; $('repo').value = c.repo || 'okx-bot-monitor'; $('token').value = c.token || '';
+  $('setup').classList.remove('hidden'); $('app').classList.add('hidden');
+  $('cancelSetup').classList.toggle('hidden', !cancelable);
+}
+
+$('setupForm').addEventListener('submit', e => {
+  e.preventDefault();
+  LS('owner', $('owner').value.trim()); LS('repo', $('repo').value.trim()); LS('token', $('token').value.trim());
+  load();
+});
+$('cancelSetup').onclick = () => { $('setup').classList.add('hidden'); $('app').classList.remove('hidden'); };
+$('settingsBtn').onclick = () => showSetup(true);
+$('refresh').onclick = load;
+$('range').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  rangeH = +b.dataset.h; [...$('range').children].forEach(x => x.classList.toggle('on', x === b));
+  drawChart(); renderTiles();
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+setInterval(() => { if (!document.hidden) load(); }, 5 * 60e3);
+load();
+</script>
+</body>
+</html>
